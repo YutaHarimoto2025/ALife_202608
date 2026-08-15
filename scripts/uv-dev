@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+UV_REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+DEV_VENV="${DEV_VENV:-$UV_REPO_ROOT/.venv-dev}"
+
+case "${1:-}" in
+  add)
+    shift
+    (cd "$UV_REPO_ROOT" && UV_PROJECT_ENVIRONMENT="$DEV_VENV" uv add --dev --no-sync "$@")
+    (cd "$UV_REPO_ROOT" && UV_PROJECT_ENVIRONMENT="$DEV_VENV" uv sync --dev)
+    ;;
+  remove)
+    shift
+    (cd "$UV_REPO_ROOT" && UV_PROJECT_ENVIRONMENT="$DEV_VENV" uv remove --dev --no-sync "$@")
+    (cd "$UV_REPO_ROOT" && UV_PROJECT_ENVIRONMENT="$DEV_VENV" uv sync --dev)
+    ;;
+  sync)
+    shift
+    (cd "$UV_REPO_ROOT" && UV_PROJECT_ENVIRONMENT="$DEV_VENV" uv sync --dev "$@")
+    ;;
+  run)
+    shift
+    UV_PROJECT_ENVIRONMENT="$DEV_VENV" uv --project "$UV_REPO_ROOT" run "$@"
+    ;;
+  pytest)
+    shift
+    UV_PROJECT_ENVIRONMENT="$DEV_VENV" uv --project "$UV_REPO_ROOT" run pytest "$@"
+    ;;
+  python)
+    shift
+    UV_PROJECT_ENVIRONMENT="$DEV_VENV" uv --project "$UV_REPO_ROOT" run python "$@"
+    ;;
+  "")
+    printf '%s\n' 'Usage: uv-dev <add|remove|sync|run|pytest|python|uv-subcommand> ...' >&2
+    exit 2
+    ;;
+  *)
+    UV_PROJECT_ENVIRONMENT="$DEV_VENV" uv --project "$UV_REPO_ROOT" "$@"
+    ;;
+esac

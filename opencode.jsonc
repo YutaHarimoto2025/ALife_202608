@@ -1,0 +1,33 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+
+  "permission": {
+    "external_directory": "ask",
+    "bash": {
+      "*": "allow",
+      "agent-sandbox *": "allow"
+    },
+
+    "read": {
+      "*": "allow",
+    },
+
+    "edit": {
+      "*": "allow",
+
+      // .git内部を直接編集させず、gitコマンド経由に限定
+      ".git/**": "deny",
+
+      ".env": "deny",
+      ".env.*": "deny",
+      "**/.env": "deny",
+      "**/.env.*": "deny",
+      "**/*.env": "deny",
+      "**/*.pem": "deny",
+      "**/*.key": "deny",
+      "**/*.p12": "deny",
+      "**/*.sqlite": "deny",
+      "**/*.db": "deny"
+    }
+  },
+}

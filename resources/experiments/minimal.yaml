@@ -1,0 +1,15 @@
+world:
+  width: 800
+  height: 500
+  particle_count: 100
+  particle_radius: 5
+  initial_speed: 70
+
+physics_params: ../../params/physics/default.yaml
+
+execution:
+  seed: 7
+  steps: 1000
+  snapshot_hz: 30
+  compute_backend: numpy
+  renderer: none

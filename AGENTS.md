@@ -1,0 +1,112 @@
+# AGENTS.md
+
+## 開発方針
+
+- 変更前に、対象コードと関連する docs を確認する。
+- 最小限の変更で目的を満たし、未要求の抽象化や将来用の空実装を追加しない。
+- 既存の変更を、明示的な指示なく削除・巻き戻ししない。
+- 実装の意味と、実装に使用するライブラリを分離する。
+- 公開API、Protocol、class、関数には型ヒントを付ける。
+- コメントは実装上の理由や制約を説明する場合だけ追加し、日本語で記述する。
+
+## 実行環境
+
+開発環境と公開環境を分離する。
+
+- `uv-dev` は開発依存を含む環境である。
+- `uv-prod` は公開時と同じ最小依存の環境である。
+- unit test、Pyright、formatter、linterは `uv-dev` で実行する。
+- headless実行やserverの起動確認は `uv-prod` でも実行する。
+- ホスト環境の `python`、`pytest`、`pyright` を直接使用せず、プロジェクトで定めたuv環境を使用する。
+- 依存関係を追加・更新するときは、開発用と公開用のどちらに必要かを確認する。
+
+標準的な確認コマンドは以下とする。
+
+```text
+uv-dev run pytest tests/unit
+uv-dev run pytest tests/smoke
+uv-dev run pyright src tests
+uv-prod run python -m alife run resources/experiments/minimal.yaml
+```
+
+## ディレクトリと責務
+
+- `src/alife/core/` は simulation の意味、state schema、tick順序、抽象契約を定義する。
+- `src/alife/systems/` は環境、物理、空間探索などのSemantic / Abstract Layerを定義する。
+- `src/alife/backends/numpy/` はNumPyによるConcrete Layerを実装する。
+- `src/alife/renderers/` はsimulation stateを変更せず、RenderStateを表示する。
+- `src/alife/runtime/` は設定からbackend、system、rendererを組み立てる。
+- `src/alife/api/` はFastAPI、WebSocketなどの通信adapterを実装する。
+- `resources/` は実験内容、world、初期条件を定義する。
+- `params/` は物理計算やアルゴリズムの調整値を定義する。
+- `tests/unit/` は `src/` の責務に対応する単体テストを置く。
+- `tests/smoke/` は設定から実行経路全体を確認するテストを置く。
+
+## Semantic LayerとBackend
+
+- `core/` と `systems/` からNumPy、CuPy、Warp、CUDA、PixiJSを直接importしない。
+- backendはSemantic Layerの契約に依存し、Semantic Layerはbackendに依存しない。
+- `SimulationCore` 内で具体的なbackendやrendererを生成しない。
+- backend、renderer、runnerはfactoryまたはdependency injectionで組み立てる。
+- CPUのNumPy実装はreference implementationとして保持する。
+- 将来backendを追加しても、stateの意味、tick順序、実験設定、統計の意味を変更しない。
+- CPUとGPUで内部アルゴリズムが異なることは許容するが、外部から観測できる意味は一致させる。
+- 数値状態はSoAで保持し、particleごとのPythonオブジェクトを基本的に作らない。
+
+## Importルール
+
+- importはファイル冒頭に記述する。
+- import順は、標準ライブラリ、サードパーティ、プロジェクト内モジュールの順とする。
+- プロジェクト内importは、原則として `alife...` から始まる絶対importを使用する。
+- `from ... import *` を使用しない。
+- `sys.path` を変更してimportを通さない。
+- import cycleを遅延importで隠さない。責務と依存方向を修正する。
+- `src/` から `tests/`、`frontend/`、開発用scriptをimportしない。
+- `core/` からFastAPI、CLI、renderer、具体backendをimportしない。
+- `systems/` からNumPyなどの具体的な数値ライブラリをimportしない。
+- NumPy、CuPy、Warp、WebSocketなどの依存は、それを必要とするConcrete Layerまたはadapterに閉じ込める。
+- rendererはsimulation stateを変更しない。UIからの変更はcommandとしてsimulationへ渡す。
+
+## ConfigとParams
+
+- YAMLを各Systemやbackendが直接読むことを禁止する。
+- config loaderが設定を読み込み、検証済みの設定オブジェクトへ変換する。
+- `resources/` は「何を実験するか」を定義する。
+- `params/` は「手法をどの値で動かすか」を定義する。
+- 同じ値をexperimentとparamsへ重複して定義しない。
+- configとparamsの解決後は、実行中にYAMLファイルを直接参照しない。
+- timestep、最大速度、最小半径など数値安定性に関係する値は、実行前に検証する。
+
+## テストルール
+
+- 新しい計算ロジックにはunit testを追加する。
+- 実行profile、依存注入、CLI、WebSocketの配線を変更した場合はsmoke testを更新する。
+- randomを使用するテストはseedを固定する。
+- CPUの数値計算は、既知の入力と期待値を使って検証する。
+- backendの実装は、Semantic Layerのcontract testで検証できるようにする。
+- テストは本番コードや設定ファイルを変更しない。
+- 生成物は専用の一時ディレクトリへ出力し、リポジトリ内のexperimentやparamsを上書きしない。
+- 高コストなbenchmark、大量agentによる長時間実験、GPU実験は明示的な指示なく実行しない。
+
+## Pyright
+
+Pyrightによる型チェックを実装完了条件に含める。
+
+- 実装終了後に `uv-dev run pyright src tests` を実行する。
+- errorだけでなく、warning相当を含むすべてのdiagnosticを確認する。
+- diagnosticが残っている場合は修正してから完了とする。
+- `# type: ignore` で型問題を隠さない。
+- 外部ライブラリのstub不足など、やむを得ない抑制には理由を記述し、対象を最小限にする。
+- 型チェック対象外にすることで問題を回避しない。
+
+## 完了条件
+
+実装完了時には、以下をすべて満たすこと。
+
+- 関連するunit testが成功する。
+- 関連するsmoke testが成功する。
+- `uv-prod` で公開用の最小実行経路が成功する。
+- `uv-dev run pyright src tests` にdiagnosticがない。
+- frontendを変更した場合は、`frontend/` で `npm run typecheck` を実行し、TypeScriptのdiagnosticがない。
+- frontendのproduction buildが必要な変更では、`frontend/` で `npm run build` を実行する。
+- 変更した責務とテストの対応を説明できる。
