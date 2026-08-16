@@ -575,26 +575,23 @@ OpenGL / Vulkan
 
 ## 実行 profile
 
-最終的には configuration で backend を切り替える。
+backendはconfigurationで切り替え、headlessかどうかはCLIで選択する。
 
 例:
 
 ```yaml
 execution:
   compute_backend: numpy
-  renderer: web
 ```
 
 ```yaml
 execution:
   compute_backend: cuda
-  renderer: native
 ```
 
-```yaml
-execution:
-  compute_backend: cuda
-  renderer: none
+```text
+run-simulation
+run-simulation --headless
 ```
 
 想定 profile:

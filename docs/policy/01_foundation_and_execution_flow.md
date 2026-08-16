@@ -82,7 +82,7 @@ simulation core 自体は FastAPI に依存させない。
 例:
 
 ```bash
-python -m alife run experiment.yaml
+run-simulation --headless
 ```
 
 用途:
@@ -100,7 +100,7 @@ UI、renderer、FastAPI は起動しない。
 例:
 
 ```bash
-python -m alife server experiment.yaml
+run-simulation
 ```
 
 構成:
@@ -570,7 +570,12 @@ alife/
 +-- api/
 |   +-- server.py
 |
-+-- experiments/
++-- params/
+|   +-- world.yaml
+|   +-- physics.yaml
+|   +-- execution.yaml
+|   +-- headless.yaml
+|   +-- render.yaml
 |
 +-- tests/
 |

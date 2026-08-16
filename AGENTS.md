@@ -26,7 +26,7 @@
 uv-dev run pytest tests/unit
 uv-dev run pytest tests/smoke
 uv-dev run pyright src tests
-uv-prod run python -m alife run resources/experiments/minimal.yaml
+uv-prod run run-simulation --headless
 ```
 
 ## ディレクトリと責務
@@ -37,8 +37,10 @@ uv-prod run python -m alife run resources/experiments/minimal.yaml
 - `src/alife/renderers/` はsimulation stateを変更せず、RenderStateを表示する。
 - `src/alife/runtime/` は設定からbackend、system、rendererを組み立てる。
 - `src/alife/api/` はFastAPI、WebSocketなどの通信adapterを実装する。
-- `resources/` は実験内容、world、初期条件を定義する。
-- `params/` は物理計算やアルゴリズムの調整値を定義する。
+- `params/` はsimulation、headless、renderの設定と全パラメータを大分類ごとのYAMLで定義する。
+- `resources/` はshader、画像などのデザインリソースを定義する。現時点では空とする。
+- プロジェクト、params、resourcesのパスは `ProjectPaths` で解決し、各所で直接構築しない。
+- CLIは `src/cli/` に実装し、`pyproject.toml` の `[project.scripts]` から公開する。
 - `tests/unit/` は `src/` の責務に対応する単体テストを置く。
 - `tests/smoke/` は設定から実行経路全体を確認するテストを置く。
 
@@ -71,10 +73,14 @@ uv-prod run python -m alife run resources/experiments/minimal.yaml
 
 - YAMLを各Systemやbackendが直接読むことを禁止する。
 - config loaderが設定を読み込み、検証済みの設定オブジェクトへ変換する。
-- `resources/` は「何を実験するか」を定義する。
-- `params/` は「手法をどの値で動かすか」を定義する。
-- 同じ値をexperimentとparamsへ重複して定義しない。
-- configとparamsの解決後は、実行中にYAMLファイルを直接参照しない。
+- `params/` は「何を実験するか」「手法をどの値で動かすか」を完全に決定する。
+- 実行形態はCLIの `--headless` で選択する。
+- `params/` は `world.yaml`、`physics.yaml`、`execution.yaml`、`headless.yaml`、`render.yaml` に分割する。
+- simulationの距離、速度、時間に関係する値は `_simu`、renderingに関係する値は `_render` を名前に付ける。
+- 距離の単位はworld unit、simulation時間の単位は秒とする。`dt_simu` は1 tickあたりのsimulation時間である。
+- 乱数を使う全Systemは `execution.yaml` の `seed` を起点とする共通の乱数管理へ接続し、Systemごとに未seedの乱数生成器を作らない。
+- `resources/` にsimulationの設定値や実験条件を置かない。
+- config loaderが `ProjectPaths` 経由でparamsを読み込み、実行中にYAMLファイルを直接参照しない。
 - timestep、最大速度、最小半径など数値安定性に関係する値は、実行前に検証する。
 
 ## テストルール
