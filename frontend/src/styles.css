@@ -1,3 +1,7 @@
+/*
+ * 全画面layout、canvas上のoverlay情報表示、操作console、minimapのstyle定義。
+ * 配色は暗背景(#121212)を前提とする。
+ */
 :root {
   color: #e6e6e1;
   background: #121212;
@@ -8,46 +12,83 @@
   box-sizing: border-box;
 }
 
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+}
+
 body {
   margin: 0;
   min-width: 320px;
+  overflow: hidden;
 }
 
-main {
-  width: min(1040px, calc(100vw - 32px));
-  margin: 0 auto;
-  padding: 32px 0;
+.fullscreen-view,
+.canvas-frame,
+.canvas-mount,
+.canvas-mount canvas {
+  width: 100%;
+  height: 100%;
 }
 
-header {
-  display: flex;
-  align-items: end;
-  justify-content: space-between;
-  gap: 24px;
-  margin-bottom: 18px;
+.fullscreen-view {
+  position: relative;
+  overflow: hidden;
+  background: #121212;
+}
+
+.canvas-frame {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  --console-width: min(330px, calc(100% - 48px));
+}
+
+.canvas-mount,
+.canvas-mount canvas {
+  display: block;
+}
+
+.overlay-info {
+  position: absolute;
+  top: 24px;
+  left: 28px;
+  z-index: 2;
+  display: grid;
+  gap: 9px;
+  max-width: min(620px, calc(100% - 380px));
+  pointer-events: none;
+  text-shadow: 0 2px 14px rgb(0 0 0 / 92%);
 }
 
 .eyebrow {
-  margin: 0 0 6px;
+  margin: 0;
   color: #aaa9a4;
-  font-size: 0.72rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
 }
 
 h1 {
   margin: 0;
-  font-size: clamp(2rem, 5vw, 3.5rem);
+  color: #f7f7f3;
+  font-size: clamp(2rem, 4vw, 3.5rem);
+  font-weight: 650;
   letter-spacing: -0.06em;
+  line-height: 0.95;
+  text-shadow: 0 2px 18px rgb(0 0 0 / 95%);
 }
 
 .status {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 9px;
-  color: #aaa9a4;
-  font-size: 0.8rem;
-  text-transform: uppercase;
+  gap: 10px;
+  color: #d8d8d2;
+  font-size: 0.92rem;
 }
 
 .dot {
@@ -57,27 +98,230 @@ h1 {
   background: #e6e6e1;
 }
 
-.canvas-frame {
-  overflow: hidden;
-  border: 1px solid #d2d2cd;
-  background: #121212;
-  box-shadow: 0 20px 80px rgb(0 0 0 / 30%);
+.simulation-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #e6e6e1;
+  font-weight: 600;
 }
 
-.canvas-frame canvas {
+.runtime-info {
+  display: grid;
+  gap: 8px;
+  color: #d8d8d2;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.84rem;
+  line-height: 1.4;
+}
+
+.performance-line {
+  white-space: normal;
+}
+
+.performance.normal {
+  color: #7aa2d6;
+}
+
+.performance.lagging {
+  color: #d27b7b;
+}
+
+.console {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  z-index: 3;
+  display: flex;
+  width: var(--console-width);
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.console-toggle,
+.console-panel,
+.console-panel button {
+  pointer-events: auto;
+}
+
+.console-toggle,
+.console-panel button {
+  border: 1px solid #aaa9a4;
+  min-height: 42px;
+  padding: 9px 12px;
+  color: #e6e6e1;
+  background: rgb(18 18 18 / 88%);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.9rem;
+  text-align: left;
+  text-shadow: 0 1px 8px rgb(0 0 0 / 70%);
+  transition: transform 90ms ease, background-color 90ms ease, border-color 90ms ease;
+}
+
+.console-toggle:active,
+.console-panel button:active,
+.console-panel button.is-pressed {
+  border-color: #f1f1ec;
+  background: rgb(80 80 76 / 92%);
+  transform: translateY(2px) scale(0.98);
+}
+
+.console-toggle {
+  align-self: flex-end;
+  border-color: #d2d2cd;
+}
+
+.console-panel {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  max-height: calc(100dvh - 100px);
+  margin-top: 0;
+  overflow-y: auto;
+  padding: 14px;
+  border: 1px solid #555550;
+  background: rgb(18 18 18 / 90%);
+  box-shadow: 0 16px 40px rgb(0 0 0 / 25%);
+  backdrop-filter: blur(8px);
+}
+
+.console-panel button:disabled {
+  color: #666661;
+  border-color: #555550;
+  cursor: not-allowed;
+}
+
+.console-panel label {
+  display: grid;
+  gap: 8px;
+  color: #aaa9a4;
+  font-size: 0.9rem;
+}
+
+.direction-control {
+  display: grid;
+  gap: 8px;
+}
+
+.direction-label,
+.speed-range {
+  color: #aaa9a4;
+  font-size: 0.8rem;
+}
+
+.direction-pad {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(42px, 1fr));
+  gap: 6px;
+  width: min(180px, 100%);
+  margin: 0 auto;
+}
+
+.direction-pad button {
+  display: grid;
+  min-height: 42px;
+  place-items: center;
+  padding: 0;
+  font-size: 1.25rem;
+  text-align: center;
+}
+
+.direction-pad .reset-view-button {
+  font-size: 0.62rem;
+  letter-spacing: -0.04em;
+  white-space: nowrap;
+}
+
+.speed-control {
+  display: grid;
+  gap: 8px;
+}
+
+.speed-control input[type="number"] {
+  width: 100%;
+  border: 1px solid #777771;
+  padding: 8px 10px;
+  color: #e6e6e1;
+  background: rgb(18 18 18 / 90%);
+  font: inherit;
+}
+
+.speed-control input[type="range"] {
+  width: 100%;
+  accent-color: #aaa9a4;
+}
+
+.console-warning {
+  margin: 0;
+  color: #d27b7b;
+  font-size: 0.8rem;
+}
+
+.console-panel input {
+  width: 100%;
+  accent-color: #aaa9a4;
+}
+
+.console-message {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: #aaa9a4;
+  font-size: 0.8rem;
+}
+
+.minimap {
+  position: absolute;
+  right: 24px;
+  bottom: 24px;
+  z-index: 2;
+  width: min(220px, 22vw);
+  aspect-ratio: 4 / 3;
+  border: 1px solid #d2d2cd;
+  padding: 8px;
+  background: rgb(18 18 18 / 88%);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 35%);
+}
+
+.minimap svg {
   display: block;
   width: 100%;
-  height: auto;
+  height: 100%;
 }
 
-@media (max-width: 620px) {
-  main {
-    width: min(100% - 20px, 1040px);
-    padding: 20px 0;
+.minimap-world {
+  fill: none;
+  stroke: #aaa9a4;
+  stroke-width: 8;
+  vector-effect: non-scaling-stroke;
+}
+
+.minimap-viewport {
+  fill: rgb(122 162 214 / 18%);
+  stroke: #7aa2d6;
+  stroke-width: 3;
+  vector-effect: non-scaling-stroke;
+}
+
+@media (max-width: 760px) {
+  .overlay-info {
+    top: 18px;
+    left: 18px;
+    max-width: calc(100% - 36px);
   }
 
-  header {
-    align-items: start;
-    flex-direction: column;
+  .console {
+    top: 16px;
+    right: 16px;
+    width: min(300px, 48vw);
+  }
+
+  .minimap {
+    right: 16px;
+    bottom: 16px;
+    left: auto;
+    width: min(150px, 38vw);
   }
 }
