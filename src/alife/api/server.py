@@ -44,13 +44,15 @@ class SimulationService:
     async def run(self) -> None:
         while not self._stop.is_set():
             self._core.step()
+            elapsed = time.perf_counter() - step_started
             if self._interval and self._core.state.tick % self._interval == 0:
                 payload = self.current_snapshot()
                 for queue in tuple(self._queues):
                     if queue.full():
                         queue.get_nowait()
                     queue.put_nowait(payload)
-            await asyncio.sleep(self._core.dt_simu)
+            # 待ち時間は dt_simu からステップ処理にかかった時間を引いた値とする
+            await asyncio.sleep(max(0.0, self._core.dt_simu - elapsed))
 
     async def stop(self) -> None:
         self._stop.set()
