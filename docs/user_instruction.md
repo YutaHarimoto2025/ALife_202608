@@ -26,7 +26,6 @@ uv-prod run run-simulation
 
 ```bash
 uv-prod run run-simulation --host 0.0.0.0 --port 8000
-uv-prod run run-simulation --root /path/to/project
 ```
 
 ### Headlessで起動

@@ -42,10 +42,6 @@ class ProjectPaths:
     def built_absolutely(cls) -> ProjectPaths:
         return cls(root_path=_find_project_root(Path(__file__).resolve()))
 
-    @classmethod
-    def from_root(cls, root_path: Path) -> ProjectPaths:
-        return cls(root_path=root_path.resolve())
-
     @property
     def params(self) -> ParamsPaths:
         return ParamsPaths(dir=self.root_path / "params")

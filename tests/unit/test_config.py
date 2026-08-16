@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 from alife.config.loader import load_experiment
-from alife.config.paths import ProjectPaths
+from alife.config.paths import ParamsPaths, ProjectPaths
 
 PROJECT = ProjectPaths.built_absolutely()
 
@@ -19,33 +19,33 @@ def test_minimal_experiment_is_valid() -> None:
 
 
 def test_invalid_backend_is_rejected(tmp_path: Path) -> None:
-    project = ProjectPaths.from_root(tmp_path)
-    project.params.dir.mkdir()
-    project.params.world.write_text(
+    params = ParamsPaths(dir=tmp_path / "params")
+    params.dir.mkdir()
+    params.world.write_text(
         "width_simu: 100\nheight_simu: 100\nparticle_count: 2\n"
         "particle_radius_simu: 2\ninitial_speed_simu: 1\n"
         "initial_speed_min_ratio: 0.25\n"
         "initial_speed_max_ratio: 1.0\n",
         encoding="utf-8",
     )
-    project.params.physics.write_text(
+    params.physics.write_text(
         "dt_simu: 0.01\nmax_speed_simu: 10\ndrag_simu: 0\n"
         "repulsion_strength_simu: 1\ninteraction_radius_simu: 10\n"
         "restitution_simu: 1\n",
         encoding="utf-8",
     )
-    project.params.execution.write_text(
+    params.execution.write_text(
         "seed: 1\ncompute_backend: cuda\n",
         encoding="utf-8",
     )
-    project.params.headless.write_text(
+    params.headless.write_text(
         "ticks_simu: 1\n",
         encoding="utf-8",
     )
-    project.params.render.write_text(
+    params.render.write_text(
         "snapshot_hz_render: 1\n",
         encoding="utf-8",
     )
 
     with pytest.raises(ValueError, match="numpy"):
-        load_experiment(project.params)
+        load_experiment(params)
