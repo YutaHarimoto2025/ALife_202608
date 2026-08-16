@@ -1,6 +1,6 @@
 from alife.config.loader import load_experiment
 from alife.config.paths import ProjectPaths
-from alife.renderers.web import snapshot_to_json
+from alife.api.server import snapshot_to_json
 from alife.runtime.factory import build_simulation
 
 

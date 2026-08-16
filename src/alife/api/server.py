@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import time
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from typing import Any
@@ -11,8 +12,32 @@ from alife.backends.numpy.state import NumpyWorldState
 from alife.config.loader import load_experiment
 from alife.config.paths import ProjectPaths
 from alife.core.simulation import SimulationCore
-from alife.renderers.web import snapshot_to_json
+from alife.core.snapshot import RenderSnapshot
 from alife.runtime.factory import build_simulation
+
+
+def snapshot_to_json(snapshot: RenderSnapshot) -> dict[str, Any]:
+    return {
+        "tick": snapshot.tick,
+        "width": snapshot.width,
+        "height": snapshot.height,
+        "particles": [
+            {
+                "x": position[0],
+                "y": position[1],
+                "radius": radius,
+                "species": species,
+                "alive": alive,
+            }
+            for position, radius, species, alive in zip(
+                snapshot.positions,
+                snapshot.radii,
+                snapshot.species,
+                snapshot.alive,
+                strict=True,
+            )
+        ],
+    }
 
 
 class SimulationService:
@@ -43,6 +68,7 @@ class SimulationService:
 
     async def run(self) -> None:
         while not self._stop.is_set():
+            step_started = time.perf_counter()
             self._core.step()
             elapsed = time.perf_counter() - step_started
             if self._interval and self._core.state.tick % self._interval == 0:

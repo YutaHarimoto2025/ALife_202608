@@ -34,12 +34,12 @@ uv-prod run run-simulation --headless
 - `src/alife/core/` は simulation の意味、state schema、tick順序、抽象契約を定義する。
 - `src/alife/systems/` は環境、物理、空間探索などのSemantic / Abstract Layerを定義する。
 - `src/alife/backends/numpy/` はNumPyによるConcrete Layerを実装する。
-- `src/alife/renderers/` はsimulation stateを変更せず、RenderStateを表示する。
-- `src/alife/runtime/` は設定からbackend、system、rendererを組み立てる。
-- `src/alife/api/` はFastAPI、WebSocketなどの通信adapterを実装する。
+- `src/alife/runtime/` は設定からbackend、systemを組み立てる。
+- `src/alife/api/` はFastAPI、WebSocketなどの通信adapterと、RenderSnapshotをfrontend向けJSONへ変換する処理を実装する。
+- `src/alife/config/` は `ProjectPaths` によるパス解決、paramsの読み込みと検証、設定schemaを定義する。
 - `params/` はsimulation、headless、renderの設定と全パラメータを大分類ごとのYAMLで定義する。
-- `resources/` はshader、画像などのデザインリソースを定義する。現時点では空とする。
-- プロジェクト、params、resourcesのパスは `ProjectPaths` で解決し、各所で直接構築しない。
+- `resources/` は見た目だけのアセット（sprite、テクスチャ、WebGL shader）を定義する。現時点では空とする。消費者はfrontend/とし、src/からは参照しない。
+- プロジェクトとparamsのパスは `ProjectPaths` で解決し、各所で直接構築しない。
 - CLIは `src/cli/` に実装し、`pyproject.toml` の `[project.scripts]` から公開する。
 - `tests/unit/` は `src/` の責務に対応する単体テストを置く。
 - `tests/smoke/` は設定から実行経路全体を確認するテストを置く。
@@ -48,8 +48,8 @@ uv-prod run run-simulation --headless
 
 - `core/` と `systems/` からNumPy、CuPy、Warp、CUDA、PixiJSを直接importしない。
 - backendはSemantic Layerの契約に依存し、Semantic Layerはbackendに依存しない。
-- `SimulationCore` 内で具体的なbackendやrendererを生成しない。
-- backend、renderer、runnerはfactoryまたはdependency injectionで組み立てる。
+- `SimulationCore` 内で具体的なbackendを生成しない。
+- backend、runnerはfactoryまたはdependency injectionで組み立てる。
 - CPUのNumPy実装はreference implementationとして保持する。
 - 将来backendを追加しても、stateの意味、tick順序、実験設定、統計の意味を変更しない。
 - CPUとGPUで内部アルゴリズムが異なることは許容するが、外部から観測できる意味は一致させる。
@@ -57,17 +57,39 @@ uv-prod run run-simulation --headless
 
 ## Importルール
 
+### 記述のスタイル
+
 - importはファイル冒頭に記述する。
 - import順は、標準ライブラリ、サードパーティ、プロジェクト内モジュールの順とする。
 - プロジェクト内importは、原則として `alife...` から始まる絶対importを使用する。
 - `from ... import *` を使用しない。
 - `sys.path` を変更してimportを通さない。
 - import cycleを遅延importで隠さない。責務と依存方向を修正する。
+
+### src/ 内の依存の方向
+
+依存は下表の右側への片方向のみを許可する。逆方向と同層間（例: `api/` と `backends/`）のimportは禁止する。
+
+| レイヤー | 依存してよい相手 |
+| --- | --- |
+| `src/cli/` | `alife.api`、`alife.runtime`、`alife.config` |
+| `src/alife/api/` | `alife.runtime`、`alife.backends`、`alife.core`、`alife.config` |
+| `src/alife/runtime/` | `alife.backends`、`alife.systems`、`alife.core`、`alife.config` |
+| `src/alife/backends/` | `alife.systems`、`alife.core`、`alife.config` |
+| `src/alife/systems/` | `alife.core`、`alife.config` |
+| `src/alife/core/` | なし。標準ライブラリのみ |
+| `src/alife/config/` | なし。標準ライブラリとyamlのみ |
+
+- `core/` と `systems/` からNumPy、CuPy、Warp、CUDA、PixiJSを直接importしない。
+- NumPy、CuPy、Warp、WebSocket、FastAPI、uvicornなどの依存は、それを必要とするConcrete Layerまたはadapter（`backends/`、`api/`、`cli/`）に閉じ込める。
+- 表示側はsimulation stateを変更しない。UIからの変更はcommandとしてsimulationへ渡す。
+
+### src/ と他のディレクトリの関係
+
 - `src/` から `tests/`、`frontend/`、開発用scriptをimportしない。
-- `core/` からFastAPI、CLI、renderer、具体backendをimportしない。
-- `systems/` からNumPyなどの具体的な数値ライブラリをimportしない。
-- NumPy、CuPy、Warp、WebSocketなどの依存は、それを必要とするConcrete Layerまたはadapterに閉じ込める。
-- rendererはsimulation stateを変更しない。UIからの変更はcommandとしてsimulationへ渡す。
+- `tests/` は `alife...` をimportしてよい。`src/` と `tests/` の依存はこの片方向のみとする。
+- `frontend/` はPython側とコードを共有しない。両者の接点はWebSocketが配信するRenderSnapshotのJSONのみとし、このschemaを変更する場合はfrontendの型定義と合わせて確認する。
+- `params/` はimportするコードではなくデータである。読み取りは `alife.config` のloaderが `ProjectPaths` 経由でのみ行い、他の層はパスを直接構築しない。`resources/` の消費者はfrontend/であり、src/は参照しない。
 
 ## ConfigとParams
 

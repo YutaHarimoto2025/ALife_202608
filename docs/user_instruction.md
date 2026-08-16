@@ -114,8 +114,27 @@ VITE_ALIFE_WS_URL=ws://192.168.1.10:8000/ws npm run dev
 
 ## 接続できない場合
 
-1. backendが `uv-prod run run-simulation` で起動していることを確認します。
-2. backendのポートと `VITE_ALIFE_WS_URL` のポートが一致していることを確認します。
+backendとfrontendは別のポートを使用します。
+
+- `127.0.0.1:8000`: FastAPIのHTTPとWebSocket
+- `localhost:5173`: Viteのfrontend開発サーバー
+
+まずbackendが起動しているターミナルとは別のターミナルで、health endpointを確認します。
+
+```bash
+curl http://127.0.0.1:8000/health
+```
+
+次のレスポンスが返れば、FastAPIへのHTTP接続は正常です。
+
+```json
+{"status":"ok"}
+```
+
+次にブラウザで `http://localhost:5173/` を開きます。frontendは起動時に `ws://127.0.0.1:8000/ws` へWebSocket接続し、simulation snapshotを受信します。
+
+1. `curl http://127.0.0.1:8000/health` が成功することを確認します。
+2. frontendの `VITE_ALIFE_WS_URL` とbackendのhost / portが一致していることを確認します。
 3. ブラウザのdeveloper consoleにWebSocketエラーがないか確認します。
 4. backendを再起動してからfrontendを再読み込みします。
 
