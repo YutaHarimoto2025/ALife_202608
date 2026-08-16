@@ -1,3 +1,8 @@
+"""粒子の物理更新。drag、近接粒子間の反発、max_speed制限、壁での反射を適用する。
+
+相互作用のpair列挙は SpatialSystem から受け取る。
+"""
+
 from __future__ import annotations
 
 from typing import cast

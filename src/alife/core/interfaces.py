@@ -1,33 +1,31 @@
+"""environment、spatial、physics各Systemの抽象契約(Protocol)を定義する。
+
+backend実装はこれらの契約に依存し、逆方向の依存は持たない。
+"""
+
 from __future__ import annotations
 
 from typing import Protocol, TypeVar
 
-from alife.core.snapshot import RenderSnapshot
-
-EnvironmentStateT = TypeVar("EnvironmentStateT", contravariant=True)
-SpatialStateT = TypeVar("SpatialStateT", contravariant=True)
-PhysicsStateT = TypeVar("PhysicsStateT")
-SnapshotStateT = TypeVar("SnapshotStateT", contravariant=True)
+_EnvironmentStateT = TypeVar("_EnvironmentStateT", contravariant=True)
+_SpatialStateT = TypeVar("_SpatialStateT", contravariant=True)
+_PhysicsStateT = TypeVar("_PhysicsStateT")
 
 
-class EnvironmentSystem(Protocol[EnvironmentStateT]):
-    def update(self, state: EnvironmentStateT, dt: float) -> None: ...
+class EnvironmentSystem(Protocol[_EnvironmentStateT]):
+    def update(self, state: _EnvironmentStateT, dt: float) -> None: ...
 
 
-class SpatialSystem(Protocol[SpatialStateT]):
-    def update(self, state: SpatialStateT) -> None: ...
+class SpatialSystem(Protocol[_SpatialStateT]):
+    def update(self, state: _SpatialStateT) -> None: ...
 
-    def pairs(self, state: SpatialStateT) -> tuple[tuple[int, int], ...]: ...
+    def pairs(self, state: _SpatialStateT) -> tuple[tuple[int, int], ...]: ...
 
 
-class PhysicsSystem(Protocol[PhysicsStateT]):
+class PhysicsSystem(Protocol[_PhysicsStateT]):
     def step(
         self,
-        state: PhysicsStateT,
-        spatial: SpatialSystem[PhysicsStateT],
+        state: _PhysicsStateT,
+        spatial: SpatialSystem[_PhysicsStateT],
         dt: float,
     ) -> None: ...
-
-
-class Snapshotter(Protocol[SnapshotStateT]):
-    def snapshot(self, state: SnapshotStateT) -> RenderSnapshot: ...

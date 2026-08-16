@@ -1,3 +1,9 @@
+"""uniform gridによる空間探索。
+
+相互作用半径をcell幅とするgridに粒子を振り分け、近接cellを含む
+粒子pairの列挙を提供する。
+"""
+
 from __future__ import annotations
 
 from collections import defaultdict
@@ -6,13 +12,13 @@ import numpy as np
 
 from alife.backends.numpy.state import NumpyWorldState
 
-Cell = tuple[int, int]
+_Cell = tuple[int, int]
 
 
 class NumpySpatialIndex:
     def __init__(self, cell_size: float) -> None:
         self._cell_size = cell_size
-        self._cells: dict[Cell, list[int]] = defaultdict(list)
+        self._cells: dict[_Cell, list[int]] = defaultdict(list)
         self._pairs: tuple[tuple[int, int], ...] = ()
 
     def update(self, state: NumpyWorldState) -> None:

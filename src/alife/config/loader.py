@@ -1,47 +1,18 @@
+"""params/ のYAML群を読み込み、検証済みの ExperimentConfig へ変換する。"""
+
 from __future__ import annotations
-
-from collections.abc import Mapping
-from pathlib import Path
-from typing import cast
-
-import yaml
 
 from alife.config.paths import ParamsPaths
 from alife.config.schema import (
     ExecutionConfig,
     ExperimentConfig,
+    FrontendUiConfig,
     HeadlessConfig,
     PhysicsConfig,
     RenderConfig,
     WorldConfig,
 )
-
-
-def _mapping(value: object, name: str) -> Mapping[str, object]:
-    if not isinstance(value, Mapping):
-        raise ValueError(f"{name} must be a mapping")
-    return cast(Mapping[str, object], value)
-
-
-def _float(data: Mapping[str, object], key: str) -> float:
-    value = data.get(key)
-    if isinstance(value, bool) or not isinstance(value, (int, float)):
-        raise ValueError(f"{key} must be a number")
-    return float(value)
-
-
-def _int(data: Mapping[str, object], key: str) -> int:
-    value = data.get(key)
-    if isinstance(value, bool) or not isinstance(value, int):
-        raise ValueError(f"{key} must be an integer")
-    return value
-
-
-def _string(data: Mapping[str, object], key: str) -> str:
-    value = data.get(key)
-    if not isinstance(value, str):
-        raise ValueError(f"{key} must be a string")
-    return value
+from utils.file_io.msgspec_io import MsgspecIO
 
 
 def _positive(value: float, name: str) -> None:
@@ -81,51 +52,53 @@ def _validate(config: ExperimentConfig) -> None:
         raise ValueError("physics.restitution_simu must be between 0 and 1")
     if config.headless.ticks_simu < 1:
         raise ValueError("headless.ticks_simu must be positive")
+    save_ticks = config.headless.save_ticks_simu
+    if save_ticks is not None:
+        if any(tick < 0 or tick > config.headless.ticks_simu for tick in save_ticks):
+            raise ValueError("headless.save_ticks_simu must be within ticks_simu")
+        if tuple(sorted(set(save_ticks))) != save_ticks:
+            raise ValueError("headless.save_ticks_simu must be sorted and unique")
+
+    frontend_ui = config.frontend_ui
+    _positive(frontend_ui.speed_multiplier_default, "frontend_ui.speed_multiplier_default")
+    _positive(frontend_ui.speed_multiplier_min, "frontend_ui.speed_multiplier_min")
+    _positive(frontend_ui.speed_multiplier_max, "frontend_ui.speed_multiplier_max")
+    _positive(frontend_ui.speed_multiplier_step, "frontend_ui.speed_multiplier_step")
+    if frontend_ui.speed_multiplier_min > frontend_ui.speed_multiplier_default:
+        raise ValueError("frontend_ui.speed_multiplier_default must not be below min")
+    if frontend_ui.speed_multiplier_default > frontend_ui.speed_multiplier_max:
+        raise ValueError("frontend_ui.speed_multiplier_default must not exceed max")
+    if frontend_ui.speed_multiplier_step > (
+        frontend_ui.speed_multiplier_max - frontend_ui.speed_multiplier_min
+    ):
+        raise ValueError("frontend_ui.speed_multiplier_step is too large")
+    if frontend_ui.elapsed_average_window < 1:
+        raise ValueError("frontend_ui.elapsed_average_window must be positive")
+    _positive(frontend_ui.camera.min_scale, "frontend_ui.camera.min_scale")
+    _positive(frontend_ui.camera.max_scale, "frontend_ui.camera.max_scale")
+    if frontend_ui.camera.min_scale > frontend_ui.camera.max_scale:
+        raise ValueError("frontend_ui.camera.min_scale must not exceed max_scale")
+    _positive(frontend_ui.camera.pan_step, "frontend_ui.camera.pan_step")
+    _positive(frontend_ui.wall.thickness, "frontend_ui.wall.thickness")
+    if frontend_ui.max_particle_footprint_points < 1:
+        raise ValueError("frontend_ui.max_particle_footprint_points must be positive")
     if config.render.snapshot_hz_render < 0.0:
         raise ValueError("render.snapshot_hz_render must not be negative")
     if config.execution.compute_backend != "numpy":
         raise ValueError("only the numpy backend is available")
 
 
-def _load_mapping(path: Path, name: str) -> Mapping[str, object]:
-    return _mapping(yaml.safe_load(path.read_text(encoding="utf-8")), name)
-
-
 def load_experiment(params: ParamsPaths) -> ExperimentConfig:
-    world_data = _load_mapping(params.world, "world")
-    physics_data = _load_mapping(params.physics, "physics")
-    execution_data = _load_mapping(params.execution, "execution")
-    headless_data = _load_mapping(params.headless, "headless")
-    render_data = _load_mapping(params.render, "render")
-
     config = ExperimentConfig(
-        world=WorldConfig(
-            width_simu=_float(world_data, "width_simu"),
-            height_simu=_float(world_data, "height_simu"),
-            particle_count=_int(world_data, "particle_count"),
-            particle_radius_simu=_float(world_data, "particle_radius_simu"),
-            initial_speed_simu=_float(world_data, "initial_speed_simu"),
-            initial_speed_min_ratio=_float(world_data, "initial_speed_min_ratio"),
-            initial_speed_max_ratio=_float(world_data, "initial_speed_max_ratio"),
+        world=MsgspecIO.read_yaml(params.world, type=WorldConfig),
+        physics=MsgspecIO.read_yaml(params.physics, type=PhysicsConfig),
+        execution=MsgspecIO.read_yaml(params.execution, type=ExecutionConfig),
+        headless=MsgspecIO.read_yaml(params.headless, type=HeadlessConfig),
+        frontend_ui=MsgspecIO.read_yaml(
+            params.frontend_ui,
+            type=FrontendUiConfig,
         ),
-        physics=PhysicsConfig(
-            dt_simu=_float(physics_data, "dt_simu"),
-            max_speed_simu=_float(physics_data, "max_speed_simu"),
-            drag_simu=_float(physics_data, "drag_simu"),
-            repulsion_strength_simu=_float(physics_data, "repulsion_strength_simu"),
-            interaction_radius_simu=_float(physics_data, "interaction_radius_simu"),
-            restitution_simu=_float(physics_data, "restitution_simu"),
-        ),
-        execution=ExecutionConfig(
-            seed=_int(execution_data, "seed"),
-            compute_backend=_string(execution_data, "compute_backend"),
-        ),
-        headless=HeadlessConfig(
-            ticks_simu=_int(headless_data, "ticks_simu"),
-        ),
-        render=RenderConfig(
-            snapshot_hz_render=_float(render_data, "snapshot_hz_render"),
-        ),
+        render=MsgspecIO.read_yaml(params.render, type=RenderConfig),
     )
     _validate(config)
     return config

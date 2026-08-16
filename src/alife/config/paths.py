@@ -1,3 +1,8 @@
+"""プロジェクト内のparams、resources、run_resultsのパスを解決する。
+
+各所でパスを直接構築せず、ProjectPaths 経由で使用する。
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -25,6 +30,10 @@ class ParamsPaths:
         return self.dir / "headless.yaml"
 
     @property
+    def frontend_ui(self) -> Path:
+        return self.dir / "frontend_ui.yaml"
+
+    @property
     def render(self) -> Path:
         return self.dir / "render.yaml"
 
@@ -32,6 +41,14 @@ class ParamsPaths:
 @dataclass(frozen=True, slots=True)
 class ResourcesPaths:
     dir: Path
+
+
+@dataclass(frozen=True, slots=True)
+class RunResultsPaths:
+    dir: Path
+
+    def run_dir(self, run_id: str) -> Path:
+        return self.dir / run_id
 
 
 @dataclass(frozen=True, slots=True)
@@ -49,6 +66,10 @@ class ProjectPaths:
     @property
     def resources(self) -> ResourcesPaths:
         return ResourcesPaths(dir=self.root_path / "resources")
+
+    @property
+    def run_results(self) -> RunResultsPaths:
+        return RunResultsPaths(dir=self.root_path / "run_results")
 
 
 def _find_project_root(start_path: Path) -> Path:

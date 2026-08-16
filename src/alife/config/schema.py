@@ -1,3 +1,5 @@
+"""params/ の各YAMLに対応する設定schema(dataclass)を定義する。"""
+
 from dataclasses import dataclass
 
 
@@ -31,6 +33,32 @@ class ExecutionConfig:
 @dataclass(frozen=True, slots=True)
 class HeadlessConfig:
     ticks_simu: int
+    save_ticks_simu: tuple[int, ...] | None
+
+
+@dataclass(frozen=True, slots=True)
+class FrontendCameraConfig:
+    min_scale: float
+    max_scale: float
+    pan_step: float
+
+
+@dataclass(frozen=True, slots=True)
+class FrontendWallConfig:
+    thickness: float
+
+
+@dataclass(frozen=True, slots=True)
+class FrontendUiConfig:
+    speed_multiplier_default: float
+    speed_multiplier_min: float
+    speed_multiplier_max: float
+    speed_multiplier_step: float
+    elapsed_average_window: int
+    camera: FrontendCameraConfig
+    wall: FrontendWallConfig
+    show_particle_footprint: bool
+    max_particle_footprint_points: int
 
 
 @dataclass(frozen=True, slots=True)
@@ -44,4 +72,5 @@ class ExperimentConfig:
     physics: PhysicsConfig
     execution: ExecutionConfig
     headless: HeadlessConfig
+    frontend_ui: FrontendUiConfig
     render: RenderConfig

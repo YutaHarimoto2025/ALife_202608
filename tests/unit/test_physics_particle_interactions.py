@@ -1,7 +1,7 @@
 import numpy as np
 
-from alife.backends.numpy.physics import NumpyParticlePhysics
-from alife.backends.numpy.spatial import NumpySpatialIndex
+from alife.backends.numpy._physics import NumpyParticlePhysics
+from alife.backends.numpy._spatial import NumpySpatialIndex
 from alife.backends.numpy.state import NumpyWorldState
 from alife.config.schema import PhysicsConfig
 

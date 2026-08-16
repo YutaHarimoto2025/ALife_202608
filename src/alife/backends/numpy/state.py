@@ -1,5 +1,11 @@
+"""NumPy配列によるSoA形式の NumpyWorldState と初期stateの生成。
+
+seedは execution.yaml の共通乱数管理のものを使用する。
+"""
+
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any
 
 import numpy as np
@@ -8,8 +14,18 @@ import numpy.typing as npt
 from alife.config.schema import ExperimentConfig
 from alife.core.state import WorldState
 
-NumpyArray = npt.NDArray[Any]
-NumpyWorldState = WorldState[NumpyArray]
+_NumpyArray = npt.NDArray[Any]
+
+
+@dataclass(slots=True)
+class NumpyWorldState(WorldState[_NumpyArray]):
+    position: _NumpyArray
+    velocity: _NumpyArray
+    radius: _NumpyArray
+    mass: _NumpyArray
+    alive: _NumpyArray
+    species: _NumpyArray
+    tick: int = 0
 
 
 def create_state(config: ExperimentConfig) -> NumpyWorldState:
@@ -39,7 +55,7 @@ def create_state(config: ExperimentConfig) -> NumpyWorldState:
     mass = np.maximum(radius * radius, np.finfo(np.float64).eps)
     alive = np.ones(world.particle_count, dtype=bool)
     species = np.zeros(world.particle_count, dtype=np.uint16)
-    return WorldState[NumpyArray](
+    return NumpyWorldState(
         width_simu=world.width_simu,
         height_simu=world.height_simu,
         position=position,

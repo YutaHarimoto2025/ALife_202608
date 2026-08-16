@@ -1,0 +1,16 @@
+speed_multiplier_default: 1.0
+speed_multiplier_min: 0.01
+speed_multiplier_max: 100.0
+speed_multiplier_step: 0.01
+elapsed_average_window: 120
+
+camera:
+  min_scale: 0.2
+  max_scale: 8.0
+  pan_step: 30.0
+
+wall:
+  thickness: 8.0
+
+show_particle_footprint: true
+max_particle_footprint_points: 24

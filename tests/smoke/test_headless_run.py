@@ -11,7 +11,7 @@ def test_experiment_runs_headless() -> None:
     config = load_experiment(ProjectPaths.built_absolutely().params)
     core = build_simulation(config)
 
-    result = SimulationRunner(core, config.render.snapshot_hz_render).run(5)
+    result = SimulationRunner(core).run(5)
 
     assert result.ticks_simu == 5
     assert core.state.tick == 5

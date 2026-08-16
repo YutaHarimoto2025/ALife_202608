@@ -1,1 +1,2 @@
 ticks_simu: 1000
+save_ticks_simu: [0, 500, 1000]
