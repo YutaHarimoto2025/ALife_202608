@@ -32,12 +32,14 @@ export function App(): ReactElement {
     let disposed = false;
     let socket: WebSocket | undefined;
     let application: Application | undefined;
+    let particles: Graphics | undefined;
+    let initializing: Promise<void> | undefined;
 
-    const start = async (): Promise<void> => {
+    const initialize = async (snapshot: Snapshot): Promise<void> => {
       const nextApplication = new Application();
       await nextApplication.init({
-        width: 800,
-        height: 500,
+        width: snapshot.width,
+        height: snapshot.height,
         background: "#121212",
         antialias: true,
       });
@@ -48,27 +50,37 @@ export function App(): ReactElement {
 
       application = nextApplication;
       container.appendChild(nextApplication.canvas);
-      const particles = new Graphics();
+      particles = new Graphics();
       nextApplication.stage.addChild(particles);
+    };
 
+    const start = (): void => {
       socket = new WebSocket(websocketUrl);
       socket.onopen = () => setStatus("connected");
       socket.onerror = () => setStatus("connection error");
       socket.onclose = () => setStatus("disconnected");
-      socket.onmessage = (message) => {
+      socket.onmessage = (message): void => {
         const snapshot = JSON.parse(message.data as string) as Snapshot;
-        setTick(snapshot.tick);
-        const scaleX = 800 / snapshot.width;
-        const scaleY = 500 / snapshot.height;
-        particles.clear();
-        for (const particle of snapshot.particles) {
-          if (!particle.alive) {
-            continue;
+        const render = async (): Promise<void> => {
+          if (application === undefined) {
+            initializing ??= initialize(snapshot);
+            await initializing;
+            initializing = undefined;
           }
-          particles
-            .circle(particle.x * scaleX, particle.y * scaleY, particle.radius * scaleX)
-            .fill(0xe6e6e1);
-        }
+          if (disposed || particles === undefined) {
+            return;
+          }
+
+          setTick(snapshot.tick);
+          particles.clear();
+          for (const particle of snapshot.particles) {
+            if (!particle.alive) {
+              continue;
+            }
+            particles.circle(particle.x, particle.y, particle.radius).fill(0xe6e6e1);
+          }
+        };
+        void render();
       };
     };
 
