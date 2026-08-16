@@ -358,7 +358,7 @@ SimulationState
       |
       | extract
       v
-RenderSnapshot
+SnapshotMessage
       |
       | WebSocket
       v
@@ -490,7 +490,7 @@ Web 版:
 SimulationState
     |
     v
-RenderSnapshot
+SnapshotMessage
     |
     v
 binary WebSocket
