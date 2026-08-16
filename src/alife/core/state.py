@@ -10,8 +10,8 @@ ArrayT = TypeVar("ArrayT")
 class WorldState[ArrayT]:
     """Backend-independent meaning of the particle state."""
 
-    width: float
-    height: float
+    width_simu: float
+    height_simu: float
     position: ArrayT
     velocity: ArrayT
     radius: ArrayT

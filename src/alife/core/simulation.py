@@ -23,19 +23,19 @@ class SimulationCore[StateT: TickState]:
         spatial: SpatialSystem[StateT],
         physics: PhysicsSystem[StateT],
         snapshotter: Snapshotter[StateT],
-        dt: float,
+        dt_simu: float,
     ) -> None:
         self.state = state
         self._environment = environment
         self._spatial = spatial
         self._physics = physics
         self._snapshotter = snapshotter
-        self.dt = dt
+        self.dt_simu = dt_simu
 
     def step(self) -> None:
-        self._environment.update(self.state, self.dt)
+        self._environment.update(self.state, self.dt_simu)
         self._spatial.update(self.state)
-        self._physics.step(self.state, self._spatial, self.dt)
+        self._physics.step(self.state, self._spatial, self.dt_simu)
         self._increment_tick()
 
     def snapshot(self) -> RenderSnapshot:

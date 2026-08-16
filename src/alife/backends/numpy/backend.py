@@ -10,12 +10,12 @@ from alife.core.simulation import SimulationCore
 class NumpyBackend:
     def build(self, config: ExperimentConfig) -> SimulationCore[NumpyWorldState]:
         state = create_state(config)
-        spatial = NumpySpatialIndex(config.physics.interaction_radius)
+        spatial = NumpySpatialIndex(config.physics.interaction_radius_simu)
         return SimulationCore(
             state=state,
             environment=NumpyEnvironment(),
             spatial=spatial,
             physics=NumpyParticlePhysics(config.physics),
             snapshotter=NumpySnapshotter(),
-            dt=config.physics.dt,
+            dt_simu=config.physics.dt_simu,
         )

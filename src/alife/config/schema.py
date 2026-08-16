@@ -3,30 +3,39 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True, slots=True)
 class WorldConfig:
-    width: float
-    height: float
+    width_simu: float
+    height_simu: float
     particle_count: int
-    particle_radius: float
-    initial_speed: float
+    particle_radius_simu: float
+    initial_speed_simu: float
+    initial_speed_min_ratio: float
+    initial_speed_max_ratio: float
 
 
 @dataclass(frozen=True, slots=True)
 class PhysicsConfig:
-    dt: float
-    max_speed: float
-    drag: float
-    repulsion_strength: float
-    interaction_radius: float
-    restitution: float
+    dt_simu: float
+    max_speed_simu: float
+    drag_simu: float
+    repulsion_strength_simu: float
+    interaction_radius_simu: float
+    restitution_simu: float
 
 
 @dataclass(frozen=True, slots=True)
 class ExecutionConfig:
     seed: int
-    steps: int
-    snapshot_hz: float
     compute_backend: str
-    renderer: str
+
+
+@dataclass(frozen=True, slots=True)
+class HeadlessConfig:
+    ticks_simu: int
+
+
+@dataclass(frozen=True, slots=True)
+class RenderConfig:
+    snapshot_hz_render: float
 
 
 @dataclass(frozen=True, slots=True)
@@ -34,3 +43,5 @@ class ExperimentConfig:
     world: WorldConfig
     physics: PhysicsConfig
     execution: ExecutionConfig
+    headless: HeadlessConfig
+    render: RenderConfig

@@ -8,8 +8,8 @@ from alife.config.schema import PhysicsConfig
 
 def _state() -> NumpyWorldState:
     return NumpyWorldState(
-        width=100.0,
-        height=100.0,
+        width_simu=100.0,
+        height_simu=100.0,
         position=np.array([[10.0, 50.0], [20.0, 50.0]], dtype=np.float64),
         velocity=np.array([[10.0, 0.0], [-10.0, 0.0]], dtype=np.float64),
         radius=np.array([2.0, 2.0], dtype=np.float64),
@@ -23,12 +23,12 @@ def test_physics_respects_max_speed_and_updates_position() -> None:
     state = _state()
     physics = NumpyParticlePhysics(
         PhysicsConfig(
-            dt=0.1,
-            max_speed=5.0,
-            drag=0.0,
-            repulsion_strength=1.0,
-            interaction_radius=1.0,
-            restitution=1.0,
+            dt_simu=0.1,
+            max_speed_simu=5.0,
+            drag_simu=0.0,
+            repulsion_strength_simu=1.0,
+            interaction_radius_simu=1.0,
+            restitution_simu=1.0,
         )
     )
     spatial = NumpySpatialIndex(cell_size=10.0)

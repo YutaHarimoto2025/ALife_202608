@@ -3,43 +3,49 @@ from pathlib import Path
 import pytest
 
 from alife.config.loader import load_experiment
+from alife.config.paths import ProjectPaths
 
-ROOT = Path(__file__).parents[2]
-EXPERIMENT = ROOT / "resources/experiments/minimal.yaml"
+PROJECT = ProjectPaths.built_absolutely()
 
 
 def test_minimal_experiment_is_valid() -> None:
-    config = load_experiment(EXPERIMENT)
+    config = load_experiment(PROJECT.params)
 
     assert config.world.particle_count == 100
-    assert config.physics.dt == 0.01
+    assert config.world.initial_speed_min_ratio == 0.25
+    assert config.world.initial_speed_max_ratio == 1.0
+    assert config.physics.dt_simu == 0.01
     assert config.execution.compute_backend == "numpy"
 
 
 def test_invalid_backend_is_rejected(tmp_path: Path) -> None:
-    path = tmp_path / "experiment.yaml"
-    path.write_text(
-        """world:
-  width: 100
-  height: 100
-  particle_count: 2
-  particle_radius: 2
-  initial_speed: 1
-physics_params: params.yaml
-execution:
-  seed: 1
-  steps: 1
-  snapshot_hz: 1
-  compute_backend: cuda
-  renderer: none
-""",
+    project = ProjectPaths.from_root(tmp_path)
+    project.params.dir.mkdir()
+    project.params.world.write_text(
+        "width_simu: 100\nheight_simu: 100\nparticle_count: 2\n"
+        "particle_radius_simu: 2\ninitial_speed_simu: 1\n"
+        "initial_speed_min_ratio: 0.25\n"
+        "initial_speed_max_ratio: 1.0\n",
         encoding="utf-8",
     )
-    (tmp_path / "params.yaml").write_text(
-        "dt: 0.01\nmax_speed: 10\ndrag: 0\nrepulsion_strength: 1\n"
-        "interaction_radius: 10\nrestitution: 1\n",
+    project.params.physics.write_text(
+        "dt_simu: 0.01\nmax_speed_simu: 10\ndrag_simu: 0\n"
+        "repulsion_strength_simu: 1\ninteraction_radius_simu: 10\n"
+        "restitution_simu: 1\n",
+        encoding="utf-8",
+    )
+    project.params.execution.write_text(
+        "seed: 1\ncompute_backend: cuda\n",
+        encoding="utf-8",
+    )
+    project.params.headless.write_text(
+        "ticks_simu: 1\n",
+        encoding="utf-8",
+    )
+    project.params.render.write_text(
+        "snapshot_hz_render: 1\n",
         encoding="utf-8",
     )
 
     with pytest.raises(ValueError, match="numpy"):
-        load_experiment(path)
+        load_experiment(project.params)

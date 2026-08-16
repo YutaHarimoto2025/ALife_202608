@@ -1,0 +1,8 @@
+# Distance: world unit. Time: simulation seconds.
+width_simu: 800
+height_simu: 500
+particle_count: 100
+particle_radius_simu: 5
+initial_speed_simu: 70
+initial_speed_min_ratio: 0.25
+initial_speed_max_ratio: 1.0

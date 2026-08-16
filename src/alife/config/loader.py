@@ -6,7 +6,15 @@ from typing import cast
 
 import yaml
 
-from alife.config.schema import ExecutionConfig, ExperimentConfig, PhysicsConfig, WorldConfig
+from alife.config.paths import ParamsPaths
+from alife.config.schema import (
+    ExecutionConfig,
+    ExperimentConfig,
+    HeadlessConfig,
+    PhysicsConfig,
+    RenderConfig,
+    WorldConfig,
+)
 
 
 def _mapping(value: object, name: str) -> Mapping[str, object]:
@@ -41,71 +49,82 @@ def _positive(value: float, name: str) -> None:
         raise ValueError(f"{name} must be positive")
 
 
+def _non_negative(value: float, name: str) -> None:
+    if value < 0.0:
+        raise ValueError(f"{name} must not be negative")
+
+
 def _validate(config: ExperimentConfig) -> None:
-    _positive(config.world.width, "world.width")
-    _positive(config.world.height, "world.height")
+    _positive(config.world.width_simu, "world.width_simu")
+    _positive(config.world.height_simu, "world.height_simu")
     if config.world.particle_count < 1:
         raise ValueError("world.particle_count must be positive")
-    _positive(config.world.particle_radius, "world.particle_radius")
-    if config.world.particle_radius * 2.0 >= min(config.world.width, config.world.height):
+    _positive(config.world.particle_radius_simu, "world.particle_radius_simu")
+    if config.world.particle_radius_simu * 2.0 >= min(
+        config.world.width_simu, config.world.height_simu
+    ):
         raise ValueError("particle radius is too large for the world")
-    if config.world.initial_speed < 0.0:
-        raise ValueError("world.initial_speed must not be negative")
+    if config.world.initial_speed_simu < 0.0:
+        raise ValueError("world.initial_speed_simu must not be negative")
+    _non_negative(config.world.initial_speed_min_ratio, "world.initial_speed_min_ratio")
+    _non_negative(config.world.initial_speed_max_ratio, "world.initial_speed_max_ratio")
+    if config.world.initial_speed_min_ratio > config.world.initial_speed_max_ratio:
+        raise ValueError("world.initial_speed_min_ratio must not exceed max ratio")
 
-    _positive(config.physics.dt, "physics.dt")
-    _positive(config.physics.max_speed, "physics.max_speed")
-    if config.physics.drag < 0.0:
-        raise ValueError("physics.drag must not be negative")
-    _positive(config.physics.repulsion_strength, "physics.repulsion_strength")
-    _positive(config.physics.interaction_radius, "physics.interaction_radius")
-    if not 0.0 <= config.physics.restitution <= 1.0:
-        raise ValueError("physics.restitution must be between 0 and 1")
-    if config.execution.steps < 1:
-        raise ValueError("execution.steps must be positive")
-    if config.execution.snapshot_hz < 0.0:
-        raise ValueError("execution.snapshot_hz must not be negative")
+    _positive(config.physics.dt_simu, "physics.dt_simu")
+    _positive(config.physics.max_speed_simu, "physics.max_speed_simu")
+    if config.physics.drag_simu < 0.0:
+        raise ValueError("physics.drag_simu must not be negative")
+    _positive(config.physics.repulsion_strength_simu, "physics.repulsion_strength_simu")
+    _positive(config.physics.interaction_radius_simu, "physics.interaction_radius_simu")
+    if not 0.0 <= config.physics.restitution_simu <= 1.0:
+        raise ValueError("physics.restitution_simu must be between 0 and 1")
+    if config.headless.ticks_simu < 1:
+        raise ValueError("headless.ticks_simu must be positive")
+    if config.render.snapshot_hz_render < 0.0:
+        raise ValueError("render.snapshot_hz_render must not be negative")
     if config.execution.compute_backend != "numpy":
         raise ValueError("only the numpy backend is available")
-    if config.execution.renderer not in {"none", "web"}:
-        raise ValueError("renderer must be none or web")
 
 
-def load_experiment(path: Path) -> ExperimentConfig:
-    raw_value = yaml.safe_load(path.read_text(encoding="utf-8"))
-    root = _mapping(raw_value, "experiment")
-    world_data = _mapping(root.get("world"), "world")
-    execution_data = _mapping(root.get("execution"), "execution")
+def _load_mapping(path: Path, name: str) -> Mapping[str, object]:
+    return _mapping(yaml.safe_load(path.read_text(encoding="utf-8")), name)
 
-    params_reference = root.get("physics_params")
-    if not isinstance(params_reference, str):
-        raise ValueError("physics_params must be a relative YAML path")
-    params_path = (path.parent / params_reference).resolve()
-    params_root = _mapping(
-        yaml.safe_load(params_path.read_text(encoding="utf-8")), "physics params"
-    )
+
+def load_experiment(params: ParamsPaths) -> ExperimentConfig:
+    world_data = _load_mapping(params.world, "world")
+    physics_data = _load_mapping(params.physics, "physics")
+    execution_data = _load_mapping(params.execution, "execution")
+    headless_data = _load_mapping(params.headless, "headless")
+    render_data = _load_mapping(params.render, "render")
 
     config = ExperimentConfig(
         world=WorldConfig(
-            width=_float(world_data, "width"),
-            height=_float(world_data, "height"),
+            width_simu=_float(world_data, "width_simu"),
+            height_simu=_float(world_data, "height_simu"),
             particle_count=_int(world_data, "particle_count"),
-            particle_radius=_float(world_data, "particle_radius"),
-            initial_speed=_float(world_data, "initial_speed"),
+            particle_radius_simu=_float(world_data, "particle_radius_simu"),
+            initial_speed_simu=_float(world_data, "initial_speed_simu"),
+            initial_speed_min_ratio=_float(world_data, "initial_speed_min_ratio"),
+            initial_speed_max_ratio=_float(world_data, "initial_speed_max_ratio"),
         ),
         physics=PhysicsConfig(
-            dt=_float(params_root, "dt"),
-            max_speed=_float(params_root, "max_speed"),
-            drag=_float(params_root, "drag"),
-            repulsion_strength=_float(params_root, "repulsion_strength"),
-            interaction_radius=_float(params_root, "interaction_radius"),
-            restitution=_float(params_root, "restitution"),
+            dt_simu=_float(physics_data, "dt_simu"),
+            max_speed_simu=_float(physics_data, "max_speed_simu"),
+            drag_simu=_float(physics_data, "drag_simu"),
+            repulsion_strength_simu=_float(physics_data, "repulsion_strength_simu"),
+            interaction_radius_simu=_float(physics_data, "interaction_radius_simu"),
+            restitution_simu=_float(physics_data, "restitution_simu"),
         ),
         execution=ExecutionConfig(
             seed=_int(execution_data, "seed"),
-            steps=_int(execution_data, "steps"),
-            snapshot_hz=_float(execution_data, "snapshot_hz"),
             compute_backend=_string(execution_data, "compute_backend"),
-            renderer=_string(execution_data, "renderer"),
+        ),
+        headless=HeadlessConfig(
+            ticks_simu=_int(headless_data, "ticks_simu"),
+        ),
+        render=RenderConfig(
+            snapshot_hz_render=_float(render_data, "snapshot_hz_render"),
         ),
     )
     _validate(config)

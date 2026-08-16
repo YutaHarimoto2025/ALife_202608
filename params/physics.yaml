@@ -1,0 +1,6 @@
+dt_simu: 0.01
+max_speed_simu: 120.0
+drag_simu: 0.35
+repulsion_strength_simu: 180.0
+interaction_radius_simu: 30.0
+restitution_simu: 0.9

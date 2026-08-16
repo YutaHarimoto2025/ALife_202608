@@ -12,28 +12,28 @@ StateT = TypeVar("StateT", bound=TickState)
 
 @dataclass(frozen=True, slots=True)
 class RunResult:
-    steps: int
+    ticks_simu: int
     snapshots: int
 
 
 class SimulationRunner[StateT: TickState]:
-    def __init__(self, core: SimulationCore[StateT], snapshot_hz: float) -> None:
+    def __init__(self, core: SimulationCore[StateT], snapshot_hz_render: float) -> None:
         self._core = core
-        self._snapshot_interval = self._interval(core.dt, snapshot_hz)
+        self._snapshot_interval = self._interval(core.dt_simu, snapshot_hz_render)
 
     @staticmethod
-    def _interval(dt: float, snapshot_hz: float) -> int | None:
-        if snapshot_hz <= 0.0:
+    def _interval(dt_simu: float, snapshot_hz_render: float) -> int | None:
+        if snapshot_hz_render <= 0.0:
             return None
-        return max(1, round(1.0 / (dt * snapshot_hz)))
+        return max(1, round(1.0 / (dt_simu * snapshot_hz_render)))
 
     def run(
         self,
-        steps: int,
+        ticks_simu: int,
         on_snapshot: Callable[[RenderSnapshot], None] | None = None,
     ) -> RunResult:
         snapshots = 0
-        for _ in range(steps):
+        for _ in range(ticks_simu):
             self._core.step()
             if (
                 on_snapshot is not None
@@ -42,4 +42,4 @@ class SimulationRunner[StateT: TickState]:
             ):
                 on_snapshot(self._core.snapshot())
                 snapshots += 1
-        return RunResult(steps=steps, snapshots=snapshots)
+        return RunResult(ticks_simu=ticks_simu, snapshots=snapshots)

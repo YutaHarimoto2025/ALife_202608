@@ -10,8 +10,8 @@ class NumpySnapshotter:
         alive = tuple(bool(value) for value in state.alive)
         return RenderSnapshot(
             tick=state.tick,
-            width=state.width,
-            height=state.height,
+            width=state.width_simu,
+            height=state.height_simu,
             positions=positions,
             radii=radii,
             species=species,

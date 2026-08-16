@@ -3,22 +3,30 @@ from __future__ import annotations
 import asyncio
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 
 from alife.backends.numpy.state import NumpyWorldState
 from alife.config.loader import load_experiment
+from alife.config.paths import ProjectPaths
 from alife.core.simulation import SimulationCore
 from alife.renderers.web import snapshot_to_json
 from alife.runtime.factory import build_simulation
 
 
 class SimulationService:
-    def __init__(self, core: SimulationCore[NumpyWorldState], snapshot_hz: float) -> None:
+    def __init__(
+        self,
+        core: SimulationCore[NumpyWorldState],
+        snapshot_hz_render: float,
+    ) -> None:
         self._core = core
-        self._interval = max(1, round(1.0 / (core.dt * snapshot_hz))) if snapshot_hz > 0 else 0
+        self._interval = (
+            max(1, round(1.0 / (core.dt_simu * snapshot_hz_render)))
+            if snapshot_hz_render > 0
+            else 0
+        )
         self._queues: set[asyncio.Queue[dict[str, Any]]] = set()
         self._stop = asyncio.Event()
 
@@ -42,16 +50,16 @@ class SimulationService:
                     if queue.full():
                         queue.get_nowait()
                     queue.put_nowait(payload)
-            await asyncio.sleep(self._core.dt)
+            await asyncio.sleep(self._core.dt_simu)
 
     async def stop(self) -> None:
         self._stop.set()
 
 
-def create_app(experiment_path: Path) -> FastAPI:
-    config = load_experiment(experiment_path)
+def create_app(paths: ProjectPaths) -> FastAPI:
+    config = load_experiment(paths.params)
     core = build_simulation(config)
-    service = SimulationService(core, config.execution.snapshot_hz)
+    service = SimulationService(core, config.render.snapshot_hz_render)
 
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:

@@ -15,24 +15,33 @@ NumpyWorldState = WorldState[NumpyArray]
 def create_state(config: ExperimentConfig) -> NumpyWorldState:
     world = config.world
     rng = np.random.default_rng(config.execution.seed)
-    lower = np.array([world.particle_radius, world.particle_radius], dtype=np.float64)
+    lower = np.array(
+        [world.particle_radius_simu, world.particle_radius_simu], dtype=np.float64
+    )
     upper = np.array(
-        [world.width - world.particle_radius, world.height - world.particle_radius],
+        [
+            world.width_simu - world.particle_radius_simu,
+            world.height_simu - world.particle_radius_simu,
+        ],
         dtype=np.float64,
     )
     position = rng.uniform(lower, upper, size=(world.particle_count, 2)).astype(np.float64)
     angles = rng.uniform(0.0, 2.0 * np.pi, size=world.particle_count)
-    speeds = rng.uniform(0.25, 1.0, size=world.particle_count) * world.initial_speed
+    speeds = rng.uniform(
+        world.initial_speed_min_ratio,
+        world.initial_speed_max_ratio,
+        size=world.particle_count,
+    ) * world.initial_speed_simu
     velocity = np.column_stack((np.cos(angles) * speeds, np.sin(angles) * speeds)).astype(
         np.float64
     )
-    radius = np.full(world.particle_count, world.particle_radius, dtype=np.float64)
+    radius = np.full(world.particle_count, world.particle_radius_simu, dtype=np.float64)
     mass = np.maximum(radius * radius, np.finfo(np.float64).eps)
     alive = np.ones(world.particle_count, dtype=bool)
     species = np.zeros(world.particle_count, dtype=np.uint16)
     return WorldState[NumpyArray](
-        width=world.width,
-        height=world.height,
+        width_simu=world.width_simu,
+        height_simu=world.height_simu,
         position=position,
         velocity=velocity,
         radius=radius,

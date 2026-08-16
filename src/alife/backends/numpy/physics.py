@@ -23,7 +23,7 @@ class NumpyParticlePhysics:
         position = cast(npt.NDArray[np.float64], state.position)
         velocity = cast(npt.NDArray[np.float64], state.velocity)
         mass = cast(npt.NDArray[np.float64], state.mass)
-        force = -self._config.drag * velocity.copy()
+        force = -self._config.drag_simu * velocity.copy()
         for first, second in spatial.pairs(state):
             delta: npt.NDArray[np.float64] = position[first] - position[second]
             distance = float(np.linalg.norm(delta))
@@ -36,18 +36,18 @@ class NumpyParticlePhysics:
                 distance = 1.0
             else:
                 direction = delta / distance
-            if distance >= self._config.interaction_radius:
+            if distance >= self._config.interaction_radius_simu:
                 continue
-            strength = self._config.repulsion_strength * (
-                1.0 - distance / self._config.interaction_radius
+            strength = self._config.repulsion_strength_simu * (
+                1.0 - distance / self._config.interaction_radius_simu
             )
             force[first] += direction * strength
             force[second] -= direction * strength
 
         velocity += dt * force / mass[:, None]
         speed = np.linalg.norm(velocity, axis=1)
-        moving = speed > self._config.max_speed
-        velocity[moving] *= self._config.max_speed / speed[moving, None]
+        moving = speed > self._config.max_speed_simu
+        velocity[moving] *= self._config.max_speed_simu / speed[moving, None]
         position += dt * velocity
         self._reflect_at_bounds(state)
 
@@ -55,14 +55,14 @@ class NumpyParticlePhysics:
         position = cast(npt.NDArray[np.float64], state.position)
         velocity = cast(npt.NDArray[np.float64], state.velocity)
         radius = cast(npt.NDArray[np.float64], state.radius)
-        for axis, limit in enumerate((state.width, state.height)):
+        for axis, limit in enumerate((state.width_simu, state.height_simu)):
             lower = position[:, axis] < radius
             upper = position[:, axis] > limit - radius
             position[lower, axis] = radius[lower]
             position[upper, axis] = limit - radius[upper]
             velocity[lower, axis] = (
-                np.abs(velocity[lower, axis]) * self._config.restitution
+                np.abs(velocity[lower, axis]) * self._config.restitution_simu
             )
             velocity[upper, axis] = (
-                -np.abs(velocity[upper, axis]) * self._config.restitution
+                -np.abs(velocity[upper, axis]) * self._config.restitution_simu
             )
