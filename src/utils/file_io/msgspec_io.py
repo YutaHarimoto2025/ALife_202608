@@ -7,10 +7,11 @@ from __future__ import annotations
 
 import os
 import tempfile
+from collections.abc import Callable
 from dataclasses import dataclass
 from functools import cache
 from pathlib import Path
-from typing import Any, TypeVar, get_origin
+from typing import Any, TypeVar, cast, get_origin
 
 import msgspec
 import numpy as np
@@ -26,30 +27,32 @@ class _NumpyArrayPayload:
     shape: tuple[int, ...]
     data: object
 
-    @classmethod
-    def _from_array(cls, array: _NumpyArray) -> _NumpyArrayPayload:
-        normalized = np.asarray(array)
-        if normalized.dtype.hasobject:
-            raise TypeError("NumPy object dtype is not supported")
-        return cls(
-            dtype=normalized.dtype.str,
-            shape=normalized.shape,
-            data=normalized.tolist(),
-        )
 
-    def _to_array(self) -> _NumpyArray:
-        try:
-            dtype = np.dtype(self.dtype)
-        except TypeError as error:
-            raise ValueError(f"invalid NumPy dtype: {self.dtype!r}") from error
-        if any(dimension < 0 for dimension in self.shape):
-            raise ValueError("NumPy array shape must be non-negative")
-        return np.array(self.data, dtype=dtype).reshape(self.shape).copy()
+def _payload_from_array(array: object) -> _NumpyArrayPayload:
+    normalized = np.asarray(array)
+    if normalized.dtype.hasobject:
+        raise TypeError("NumPy object dtype is not supported")
+    return _NumpyArrayPayload(
+        dtype=normalized.dtype.str,
+        shape=normalized.shape,
+        data=normalized.tolist(),
+    )
+
+
+def _payload_to_array(payload: _NumpyArrayPayload) -> _NumpyArray:
+    try:
+        dtype = np.dtype(payload.dtype)
+    except TypeError as error:
+        raise ValueError(f"invalid NumPy dtype: {payload.dtype!r}") from error
+    if any(dimension < 0 for dimension in payload.shape):
+        raise ValueError("NumPy array shape must be non-negative")
+    return np.array(payload.data, dtype=dtype).reshape(payload.shape).copy()
 
 
 def _encode_hook(value: object) -> object:
     if isinstance(value, np.ndarray):
-        return _NumpyArrayPayload._from_array(value)
+        # isinstance では型引数がunknownにnarrowされるため、明示的に型を表明する。
+        return _payload_from_array(cast(_NumpyArray, value))
     if isinstance(value, Path):
         return str(value)
     raise TypeError(f"unsupported serialization type: {type(value)!r}")
@@ -62,7 +65,7 @@ def _decode_hook(expected_type: Any, value: object) -> object:
         return Path(value)
     if expected_type is np.ndarray or get_origin(expected_type) is np.ndarray:
         payload = msgspec.convert(value, type=_NumpyArrayPayload, strict=True)
-        return payload._to_array()
+        return _payload_to_array(payload)
     raise TypeError(f"unsupported deserialization type: {expected_type!r}")
 
 
@@ -139,13 +142,16 @@ class MsgspecIO:
 
     @staticmethod
     @cache
-    def _yaml_decoder(target_type: Any) -> Any:
-        return lambda data: msgspec.yaml.decode(
-            data,
-            type=target_type,
-            dec_hook=_decode_hook,
-            strict=True,
-        )
+    def _yaml_decoder(target_type: Any) -> Callable[[bytes], Any]:
+        def decode(data: bytes) -> Any:
+            return msgspec.yaml.decode(
+                data,
+                type=target_type,
+                dec_hook=_decode_hook,
+                strict=True,
+            )
+
+        return decode
 
     @staticmethod
     @cache

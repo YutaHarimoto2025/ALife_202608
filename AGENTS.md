@@ -156,11 +156,13 @@ uv-prod run run-simulation --headless
 Pyrightによる型チェックを実装完了条件に含める。
 
 - 実装終了後に `uv-dev run pyright src tests` を実行する。
+- 型チェックのmodeは `pyrightconfig.json` で `strict` に統一する。`pyrightconfig.json` が `pyproject.toml` の設定より優先されるため、両方に書かない。
 - errorだけでなく、warning相当を含むすべてのdiagnosticを確認する。
 - diagnosticが残っている場合は修正してから完了とする。
 - `# type: ignore` で型問題を隠さない。
 - 外部ライブラリのstub不足など、やむを得ない抑制には理由を記述し、対象を最小限にする。
 - 型チェック対象外にすることで問題を回避しない。
+- testはprivate symbol（`_` prefix）に直接アクセスしてよい。Prefix Rulesは公開意図の表明でありアクセス制御ではないため、`tests/` では `reportPrivateUsage` のみ無効化する。
 
 ## 完了条件
 

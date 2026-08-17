@@ -34,10 +34,6 @@ markers = [
     "smoke: configuration and runtime wiring checks",
 ]
 
-[tool.pyright]
-include = ["src", "tests"]
-typeCheckingMode = "strict"
-
 [tool.ruff]
 line-length = 100
 target-version = "py312"
