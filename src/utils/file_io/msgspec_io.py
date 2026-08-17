@@ -89,6 +89,8 @@ class MsgspecIO:
     @classmethod
     def write_json(cls, path: Path, value: object) -> Path:
         encoded = msgspec.json.format(cls._json_encoder.encode(value), indent=2) + b"\n"
+        # 保存前に型付きdecodeを通し、復元できないbytesを書き込まないことを保証する。
+        cls._json_decoder(type(value)).decode(encoded)
         return cls._write(path, encoded)
 
     @classmethod
@@ -97,7 +99,9 @@ class MsgspecIO:
 
     @classmethod
     def write_yaml(cls, path: Path, value: object) -> Path:
-        return cls._write(path, msgspec.yaml.encode(value, enc_hook=_encode_hook))
+        encoded = msgspec.yaml.encode(value, enc_hook=_encode_hook)
+        cls._yaml_decoder(type(value))(encoded)
+        return cls._write(path, encoded)
 
     @classmethod
     def read_yaml(cls, path: Path, *, type: type[_T]) -> _T:
@@ -105,7 +109,9 @@ class MsgspecIO:
 
     @classmethod
     def write_msgpack(cls, path: Path, value: object) -> Path:
-        return cls._write(path, cls._msgpack_encoder.encode(value))
+        encoded = cls._msgpack_encoder.encode(value)
+        cls._msgpack_decoder(type(value)).decode(encoded)
+        return cls._write(path, encoded)
 
     @classmethod
     def read_msgpack(cls, path: Path, *, type: type[_T]) -> _T:
