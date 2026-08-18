@@ -467,15 +467,10 @@ export function App(): ReactElement {
         target.closest("button, input, textarea, select") !== null;
       if (event.code === "Space") {
         // button にフォーカスがあっても常に pause/resume に割り当て、
-        // ブラウザ既定の「space で button を激活」を preventDefault で無効化する。
-        // input / textarea / select 内では入力を壊すため何もしない。
-        if (
-          !(target instanceof HTMLElement && target.closest("input, textarea, select") !== null)
-        ) {
-          event.preventDefault();
-          _flashShortcut("space");
-          _sendCommand({ type: "toggle_pause" });
-        }
+        // inputを含め、ブラウザ既定の操作を無効化する。
+        event.preventDefault();
+        _flashShortcut("space");
+        _sendCommand({ type: "toggle_pause" });
         return;
       }
       if (inFormControl) {
