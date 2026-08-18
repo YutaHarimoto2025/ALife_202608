@@ -19,23 +19,12 @@
 - docs/open/ は未解決事項のたたき台であり、内容を正本として扱わない。
 - 解決済みの重要事項は docs/agents/ へ整理し、必要な場合だけ本ファイルから参照する。
 
-PythonコードまたはPythonテストを変更する場合は、変更前に以下の指示を読んでください。
-@docs/agents/python.md
+## 開発規則
 
- src/ の責務、依存、importを変更する場合は、変更前に以下の指示を読んでください。
-@docs/agents/architecture.md
-
-params、設定loader、実行設定を変更する場合は、変更前に以下の指示を読んでください。
-@docs/agents/configuration.md
-
-frontendまたはWebSocketのUI連携を変更する場合は、変更前に以下の指示を読んでください。
-@docs/agents/frontend.md
-
-checkpointまたはrun_resultsを変更する場合は、変更前に以下の指示を読んでください。
-@docs/agents/checkpoint.md
-
-テスト、型検査、実行確認を追加または変更する場合は、変更前に以下の指示を読んでください。
-@docs/agents/verification.md
-
-commitを作成する場合は、変更前に以下の指示を読んでください。
-@docs/agents/commit.md
+- PythonコードまたはPythonテストを変更する場合は、変更前に `@docs/agents/python.md` を読んでください。
+- src/ の責務、依存、importを変更する場合は、変更前に `@docs/agents/architecture.md` を読んでください。
+- params、設定loader、実行設定を変更する場合は、変更前に `@docs/agents/configuration.md` を読んでください。
+- frontendまたはWebSocketのUI連携を変更する場合は、変更前に `@docs/agents/frontend.md` を読んでください。
+- checkpointまたはrun_resultsを変更する場合は、変更前に `@docs/agents/checkpoint.md` を読んでください。
+- テスト、型検査、実行確認を追加または変更する場合は、変更前に `@docs/agents/verification.md` を読んでください。
+- commitを作成する場合は、変更前に `@docs/agents/commit.md` を読んでください。
